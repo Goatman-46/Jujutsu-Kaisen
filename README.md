@@ -1,9 +1,9 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIXEL KAIZEN | DOMAIN OVERHAUL</title>
+    <title>PIXEL KAIZEN | ULTRA DE EDITION</title>
     <style>
         :root { --blue: #00d4ff; --red: #ff2e2e; --purple: #bc00ff; }
         body { margin: 0; background: #050505; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: none; }
@@ -92,12 +92,45 @@ let shake = 0;
 let difficulty = 'medium';
 let gameActive = false;
 let domainInEffect = false;
+let slashes = []; // Particle system for slashes
 
 const diffSettings = {
     easy: { speed: 2, attackRate: 0.01, ceRate: 0.05 },
     medium: { speed: 4, attackRate: 0.03, ceRate: 0.1 },
     hard: { speed: 6, attackRate: 0.08, ceRate: 0.2 }
 };
+
+// --- Particle Class for Visible Slashes ---
+class SlashEffect {
+    constructor(x, y, w, h) {
+        // Randomize position within the target's bounding box
+        this.startX = x + Math.random() * w;
+        this.startY = y + Math.random() * h;
+        this.endX = x + Math.random() * w;
+        this.endY = y + Math.random() * h;
+        // Alternate between red and blue slashes
+        this.color = Math.random() < 0.5 ? '#ff2e2e' : '#00d4ff';
+        this.alpha = 1;
+        this.life = 10; // Life in frames
+    }
+
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(this.startX, this.startY);
+        ctx.lineTo(this.endX, this.endY);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    update() {
+        this.life--;
+        this.alpha = this.life / 10;
+    }
+}
 
 class Fighter {
     constructor({ x, y, color, isBot = false }) {
@@ -109,6 +142,7 @@ class Fighter {
         this.onGrd = false;
         this.jumps = 0;
         this.isDomainCaster = false;
+        this.isFloating = false; // Add floating state
     }
 
     draw() {
@@ -132,15 +166,23 @@ class Fighter {
     }
 
     update() {
-        if (!domainInEffect || (domainInEffect && this.isDomainCaster)) {
+        // Handle floating state (no gravity, no standard movement)
+        if (this.isFloating) {
+            this.pos.y = 100; // Lock position above ground
+            this.vel.x = 0;
+            this.vel.y = 0;
+            this.onGrd = false;
+        } else if (!domainInEffect || (domainInEffect && this.isDomainCaster)) {
+            // Apply normal physics if not floating or if domain caster isn't floating
             this.pos.x += this.vel.x; 
             this.pos.y += this.vel.y;
         }
 
         if (this.pos.y + this.h >= 380) { 
             this.vel.y = 0; this.pos.y = 280; this.onGrd = true; this.jumps = 0;
-        } else { 
-            this.vel.y += 0.8; this.onGrd = false; 
+        } else if (!this.isFloating) { 
+            this.vel.y += 0.8; // Apply gravity if not floating
+            this.onGrd = false; 
         }
         
         if (this.isCharge) { this.ce = Math.min(100, this.ce + 0.5); this.vel.x = 0; }
@@ -148,7 +190,7 @@ class Fighter {
     }
 
     jump() {
-        if (this.jumps < 2 && !domainInEffect) {
+        if (this.jumps < 2 && !domainInEffect && !this.isFloating) {
             this.vel.y = -16;
             this.jumps++;
         }
@@ -175,21 +217,27 @@ function useDomain(c, t) {
     const ui = document.getElementById('domain-ui');
     const container = document.getElementById('game-container');
     
-    // Phase 1: Casting
+    // Phase 1: Casting & Floating
     ui.classList.add('show');
     container.classList.add('domain-active-bg');
     triggerHitEffect(15, 0.8);
+    c.isFloating = true; // Start floating
 
-    // Phase 2: The Sure-Hit Sequence
+    // Phase 2: The Sure-Hit Sequence with Slashes
     setTimeout(() => {
         let hits = 0;
         const interval = setInterval(() => {
-            t.hp = Math.max(0, t.hp - 5);
-            triggerHitEffect(10, 0.2);
-            hits++;
-            if (hits >= 10) { // Total 50 damage over 10 quick hits
+            if (hits >= 30) { // total 30 hits, 2 damage each = 60 damage
                 clearInterval(interval);
                 endDomain(c);
+            } else {
+                t.hp = Math.max(0, t.hp - 2);
+                triggerHitEffect(10, 0.2);
+                // Create multiple visible slashes per tick
+                slashes.push(new SlashEffect(t.pos.x, t.pos.y, t.w, t.h));
+                slashes.push(new SlashEffect(t.pos.x, t.pos.y, t.w, t.h));
+                slashes.push(new SlashEffect(t.pos.x, t.pos.y, t.w, t.h));
+                hits++;
             }
         }, 100);
     }, 1500);
@@ -199,6 +247,7 @@ function endDomain(caster) {
     setTimeout(() => {
         domainInEffect = false;
         caster.isDomainCaster = false;
+        caster.isFloating = false; // Stop floating
         document.getElementById('domain-ui').classList.remove('show');
         document.getElementById('game-container').classList.remove('domain-active-bg');
         triggerHitEffect(20, 1); // Final impact flash
@@ -225,6 +274,21 @@ bind('btn-up', () => p1.jump());
 bind('btn-charge', () => p1.isCharge = true, () => p1.isCharge = false);
 bind('btn-atk', () => { if(!domainInEffect){ p1.isAtk = true; setTimeout(()=>p1.isAtk=false, 150); } });
 bind('btn-dom', () => useDomain(p1, bot));
+
+// Keyboard support for Double Jump and attack
+window.addEventListener('keydown', e => {
+    if (e.key === 'a') { keys.a = true; p1.dir = -1; }
+    if (e.key === 'd') { keys.d = true; p1.dir = 1; }
+    if (e.key === 'w') p1.jump();
+    if (e.key === 'j') { p1.isAtk = true; setTimeout(()=>p1.isAtk=false, 150); }
+    if (e.key === 'c') p1.isCharge = true;
+    if (e.key === 'l') useDomain(p1, bot);
+});
+window.addEventListener('keyup', e => {
+    if (e.key === 'a') keys.a = false;
+    if (e.key === 'd') keys.d = false;
+    if (e.key === 'c') p1.isCharge = false;
+});
 
 function animate() {
     if (!gameActive) return;
@@ -266,6 +330,15 @@ function animate() {
             document.getElementById('ko-screen').style.display = 'flex';
             document.getElementById('ko-text').innerText = p1.hp <= 0 ? "K.O. - DEFEAT" : "K.O. - VICTORY";
             triggerHitEffect(40);
+        }
+    }
+
+    // Update slashes particle system
+    for (let i = slashes.length - 1; i >= 0; i--) {
+        slashes[i].update();
+        slashes[i].draw();
+        if (slashes[i].life <= 0) {
+            slashes.splice(i, 1);
         }
     }
 
