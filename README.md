@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIXEL KAIZEN | DOUBLE JUMP EDITION</title>
+    <title>PIXEL KAIZEN | By Tayyab Ejaz(Goatman46)</title>
     <style>
         :root { --blue: #00d4ff; --red: #ff2e2e; --purple: #bc00ff; }
         body { margin: 0; background: #050505; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: none; }
