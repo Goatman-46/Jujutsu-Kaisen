@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIXEL KAIZEN | SURVIVAL EDITION</title>
+    <title>PIXEL KAIZEN | BALANCED EDITION</title>
     <style>
         :root { --blue: #00d4ff; --red: #ff2e2e; --purple: #bc00ff; --green: #2eff7b; }
         body { margin: 0; background: #050505; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: none; }
@@ -37,9 +37,11 @@
 
         .mobile-btns { display: flex; justify-content: space-between; width: 800px; margin: 5px auto; max-width: 95vw; }
         .group { display: flex; gap: 8px; }
-        .btn { width: 60px; height: 60px; background: #222; border: 2px solid #444; color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .btn { width: 60px; height: 60px; background: #222; border: 2px solid #444; color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; position: relative; }
         .btn-special { border-color: var(--blue); color: var(--blue); }
         .btn-domain { border-color: var(--purple); color: var(--purple); }
+        .btn-disabled { opacity: 0.3; border-color: #555; color: #555; }
+        .cooldown-overlay { position: absolute; font-size: 12px; bottom: 2px; }
     </style>
 </head>
 <body>
@@ -83,7 +85,14 @@
 
 <div class="mobile-btns">
     <div class="group"><div class="btn" id="btn-left">◀</div><div class="btn" id="btn-right">▶</div><div class="btn btn-special" id="btn-charge">CE</div></div>
-    <div class="group"><div class="btn" id="btn-up">UP</div><div class="btn" id="btn-atk">HIT</div><div class="btn btn-domain" id="btn-dom">DE</div></div>
+    <div class="group">
+        <div class="btn" id="btn-up">UP</div>
+        <div class="btn" id="btn-atk">HIT</div>
+        <div class="btn btn-domain" id="btn-dom">
+            DE
+            <span id="de-timer" class="cooldown-overlay"></span>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -97,10 +106,13 @@ let gameMode = '1v1';
 let domainInEffect = false;
 let slashes = [];
 
-// Survival Variables
+// Survival/Cooldown Variables
 let stage = 1;
 let enemiesDefeated = 0;
 let maxStages = 50;
+let p1LastDomain = 0;
+let botLastDomain = 0;
+const domainCooldown = 10000; // 10 seconds
 
 const diffSettings = {
     easy: { speed: 2, attackRate: 0.01, ceRate: 0.05 },
@@ -178,7 +190,14 @@ function triggerHitEffect(power, flashOpacity = 0.4) {
 }
 
 function useDomain(c, t) {
-    if (c.ce < 100 || gameOver || domainInEffect) return;
+    const now = Date.now();
+    const lastTime = c === p1 ? p1LastDomain : botLastDomain;
+    
+    if (c.ce < 100 || gameOver || domainInEffect || (now - lastTime < domainCooldown)) return;
+    
+    if(c === p1) p1LastDomain = now;
+    else botLastDomain = now;
+
     c.ce = 0; domainInEffect = true; c.isDomainCaster = true;
     const ui = document.getElementById('domain-ui');
     const txt = document.getElementById('domain-text');
@@ -213,7 +232,7 @@ function endDomain(caster) {
     setTimeout(() => {
         domainInEffect = false; caster.isDomainCaster = false; caster.isFloating = false;
         document.getElementById('domain-ui').classList.remove('show');
-        document.getElementById('game-container').className = ''; // Reset BG
+        document.getElementById('game-container').className = '';
         document.getElementById('domain-text').className = '';
         triggerHitEffect(20, 1);
     }, 500);
@@ -241,16 +260,10 @@ function updateStageUI() {
 }
 
 function spawnNextEnemy() {
-    stage++;
-    enemiesDefeated++;
-    if(stage > maxStages) {
-        showWinScreen();
-        return;
-    }
-    
+    stage++; enemiesDefeated++;
+    if(stage > maxStages) { showWinScreen(); return; }
     let isBoss = (stage % 5 === 0);
     bot.reset(650, 280, isBoss ? '#2eff7b' : '#ff2e2e', true, isBoss);
-    
     if(isBoss) triggerHitEffect(20, 0.5);
     updateStageUI();
 }
@@ -261,8 +274,6 @@ function showWinScreen() {
     screen.style.display = 'flex';
     document.getElementById('ko-text').innerText = "CONGRATULATIONS";
     document.getElementById('ko-text').style.color = "var(--green)";
-    document.getElementById('survival-result').innerText = "YOU CONQUERED THE GAUNTLET!";
-    document.getElementById('survival-result').style.display = "block";
 }
 
 // Controls
@@ -284,6 +295,20 @@ function animate() {
     ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,800,400);
     if (shake > 0) { ctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); shake *= 0.9; }
     
+    // Update Cooldown UI
+    const now = Date.now();
+    const cdLeft = Math.max(0, Math.ceil((domainCooldown - (now - p1LastDomain)) / 1000));
+    const deBtn = document.getElementById('btn-dom');
+    const timerText = document.getElementById('de-timer');
+    
+    if (cdLeft > 0 && p1LastDomain !== 0) {
+        deBtn.classList.add('btn-disabled');
+        timerText.innerText = cdLeft + "s";
+    } else {
+        deBtn.classList.remove('btn-disabled');
+        timerText.innerText = "";
+    }
+
     if (!gameOver) {
         if (!domainInEffect) {
             p1.vel.x = keys.a ? -6 : (keys.d ? 6 : 0);
@@ -311,23 +336,17 @@ function animate() {
             });
         }
 
-        // Logic for Death/Progression
         if (p1.hp <= 0) {
             gameOver = true;
             document.getElementById('ko-screen').style.display = 'flex';
             document.getElementById('ko-text').innerText = "K.O. - DEFEAT";
-            if(gameMode === 'survival') {
-                document.getElementById('survival-result').innerText = `STAGES CLEARED: ${stage-1}`;
-                document.getElementById('survival-result').style.display = "block";
-            }
         } else if (bot.hp <= 0) {
             if (gameMode === '1v1') {
                 gameOver = true;
                 document.getElementById('ko-screen').style.display = 'flex';
                 document.getElementById('ko-text').innerText = "K.O. - VICTORY";
             } else {
-                // Survival Progression
-                if(stage % 5 === 0) p1.hp = 100; // Full heal after boss
+                if(stage % 5 === 0) p1.hp = 100;
                 spawnNextEnemy();
             }
         }
