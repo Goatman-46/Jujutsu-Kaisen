@@ -1,17 +1,25 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIXEL KAIZEN | By Tayyab Ejaz(Goatman46)</title>
+    <title>PIXEL KAIZEN | DOMAIN OVERHAUL</title>
     <style>
         :root { --blue: #00d4ff; --red: #ff2e2e; --purple: #bc00ff; }
         body { margin: 0; background: #050505; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: none; }
         
-        #game-container { position: relative; width: 800px; height: 400px; margin: 10px auto; outline: 4px solid #222; overflow: hidden; background: #111; }
+        #game-container { position: relative; width: 800px; height: 400px; margin: 10px auto; outline: 4px solid #222; overflow: hidden; background: #111; transition: background 0.5s; }
+        
+        /* Domain Warp Class */
+        .domain-active-bg { background: radial-gradient(circle, #1a0026 0%, #000 100%) !important; outline-color: var(--purple) !important; }
+
         #impact-flash { position: absolute; inset: 0; background: white; opacity: 0; z-index: 101; pointer-events: none; }
-        #domain-ui { position: absolute; inset: 0; background: black; opacity: 0; display: flex; align-items: center; justify-content: center; z-index: 100; pointer-events: none; transition: opacity 0.2s; }
-        #domain-ui h1 { font-size: 50px; color: var(--purple); text-shadow: 0 0 20px var(--purple); font-style: italic; }
+        
+        /* Domain UI Animation */
+        #domain-ui { position: absolute; inset: 0; opacity: 0; display: flex; align-items: center; justify-content: center; z-index: 100; pointer-events: none; }
+        #domain-ui h1 { font-size: 60px; color: white; text-shadow: 0 0 30px var(--purple), 0 0 60px var(--purple); font-style: italic; transform: scale(0.5); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #domain-ui.show { opacity: 1; }
+        #domain-ui.show h1 { transform: scale(1.2); }
 
         .hud { position: absolute; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 10; }
         .stat-group { width: 40%; }
@@ -22,8 +30,7 @@
 
         #menu { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .diff-btn { margin: 10px; padding: 10px 30px; border: 2px solid white; background: none; color: white; font-family: inherit; cursor: pointer; width: 200px; }
-        .diff-btn:hover { background: white; color: black; }
-
+        
         #ko-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
         #ko-screen h1 { font-size: 80px; color: var(--red); text-shadow: 0 0 20px var(--red); }
 
@@ -84,6 +91,7 @@ let gameOver = false;
 let shake = 0;
 let difficulty = 'medium';
 let gameActive = false;
+let domainInEffect = false;
 
 const diffSettings = {
     easy: { speed: 2, attackRate: 0.01, ceRate: 0.05 },
@@ -99,46 +107,50 @@ class Fighter {
         this.isAtk = false; this.isCharge = false;
         this.dir = isBot ? -1 : 1; 
         this.onGrd = false;
-        this.jumps = 0; // Track number of jumps
+        this.jumps = 0;
+        this.isDomainCaster = false;
     }
 
     draw() {
         ctx.save();
-        if (this.isCharge) { ctx.shadowBlur = 20; ctx.shadowColor = '#00d4ff'; ctx.fillStyle = '#fff'; }
-        else { ctx.fillStyle = this.color; }
+        if (this.isCharge || (domainInEffect && this.isDomainCaster)) { 
+            ctx.shadowBlur = 30; 
+            ctx.shadowColor = this.isDomainCaster ? '#bc00ff' : '#00d4ff'; 
+            ctx.fillStyle = '#fff'; 
+        } else { 
+            ctx.fillStyle = this.color; 
+        }
+        
         ctx.fillRect(this.pos.x, this.pos.y, this.w, this.h);
+        
         if (this.isAtk) {
             ctx.fillStyle = "white";
-            ctx.shadowBlur = 10; ctx.shadowColor = "white";
+            ctx.shadowBlur = 15; ctx.shadowColor = "white";
             ctx.fillRect(this.pos.x + (this.dir === 1 ? 50 : -40), this.pos.y + 20, 40, 15);
         }
         ctx.restore();
     }
 
     update() {
-        this.pos.x += this.vel.x; this.pos.y += this.vel.y;
-        
-        // Floor Collision Logic
+        if (!domainInEffect || (domainInEffect && this.isDomainCaster)) {
+            this.pos.x += this.vel.x; 
+            this.pos.y += this.vel.y;
+        }
+
         if (this.pos.y + this.h >= 380) { 
-            this.vel.y = 0; 
-            this.pos.y = 280; 
-            this.onGrd = true; 
-            this.jumps = 0; // Reset jumps when touching ground
+            this.vel.y = 0; this.pos.y = 280; this.onGrd = true; this.jumps = 0;
         } else { 
-            this.vel.y += 0.8; 
-            this.onGrd = false; 
+            this.vel.y += 0.8; this.onGrd = false; 
         }
         
         if (this.isCharge) { this.ce = Math.min(100, this.ce + 0.5); this.vel.x = 0; }
         this.draw();
     }
 
-    // New Jump Function
     jump() {
-        if (this.jumps < 2) { // Allow up to 2 jumps
+        if (this.jumps < 2 && !domainInEffect) {
             this.vel.y = -16;
             this.jumps++;
-            if (this.jumps === 2) triggerHitEffect(5); // Little shake on double jump
         }
     }
 }
@@ -146,22 +158,51 @@ class Fighter {
 const p1 = new Fighter({ x: 100, y: 0, color: '#006eff' });
 const bot = new Fighter({ x: 650, y: 0, color: '#ff2e2e', isBot: true });
 
-function triggerHitEffect(power) {
+function triggerHitEffect(power, flashOpacity = 0.4) {
     shake = power;
     const flash = document.getElementById('impact-flash');
-    flash.style.opacity = 0.4;
+    flash.style.opacity = flashOpacity;
     setTimeout(() => flash.style.opacity = 0, 50);
 }
 
 function useDomain(c, t) {
-    if (c.ce < 100 || gameOver) return;
+    if (c.ce < 100 || gameOver || domainInEffect) return;
+    
     c.ce = 0; 
-    document.getElementById('domain-ui').style.opacity = 1;
-    setTimeout(() => { 
-        t.hp = Math.max(0, t.hp - 35); 
-        document.getElementById('domain-ui').style.opacity = 0;
-        triggerHitEffect(30);
-    }, 1200);
+    domainInEffect = true;
+    c.isDomainCaster = true;
+    
+    const ui = document.getElementById('domain-ui');
+    const container = document.getElementById('game-container');
+    
+    // Phase 1: Casting
+    ui.classList.add('show');
+    container.classList.add('domain-active-bg');
+    triggerHitEffect(15, 0.8);
+
+    // Phase 2: The Sure-Hit Sequence
+    setTimeout(() => {
+        let hits = 0;
+        const interval = setInterval(() => {
+            t.hp = Math.max(0, t.hp - 5);
+            triggerHitEffect(10, 0.2);
+            hits++;
+            if (hits >= 10) { // Total 50 damage over 10 quick hits
+                clearInterval(interval);
+                endDomain(c);
+            }
+        }, 100);
+    }, 1500);
+}
+
+function endDomain(caster) {
+    setTimeout(() => {
+        domainInEffect = false;
+        caster.isDomainCaster = false;
+        document.getElementById('domain-ui').classList.remove('show');
+        document.getElementById('game-container').classList.remove('domain-active-bg');
+        triggerHitEffect(20, 1); // Final impact flash
+    }, 500);
 }
 
 function startGame(level) {
@@ -180,25 +221,10 @@ const bind = (id, s, e) => {
 
 bind('btn-left', () => {keys.a = true; p1.dir = -1;}, () => keys.a = false);
 bind('btn-right', () => {keys.d = true; p1.dir = 1;}, () => keys.d = false);
-bind('btn-up', () => { p1.jump(); }); // Uses the new jump logic
+bind('btn-up', () => p1.jump());
 bind('btn-charge', () => p1.isCharge = true, () => p1.isCharge = false);
-bind('btn-atk', () => { p1.isAtk = true; setTimeout(()=>p1.isAtk=false, 150); });
+bind('btn-atk', () => { if(!domainInEffect){ p1.isAtk = true; setTimeout(()=>p1.isAtk=false, 150); } });
 bind('btn-dom', () => useDomain(p1, bot));
-
-// Keyboard support for Double Jump
-window.addEventListener('keydown', e => {
-    if (e.key === 'a') { keys.a = true; p1.dir = -1; }
-    if (e.key === 'd') { keys.d = true; p1.dir = 1; }
-    if (e.key === 'w') p1.jump();
-    if (e.key === 'j') { p1.isAtk = true; setTimeout(()=>p1.isAtk=false, 150); }
-    if (e.key === 'c') p1.isCharge = true;
-    if (e.key === 'l') useDomain(p1, bot);
-});
-window.addEventListener('keyup', e => {
-    if (e.key === 'a') keys.a = false;
-    if (e.key === 'd') keys.d = false;
-    if (e.key === 'c') p1.isCharge = false;
-});
 
 function animate() {
     if (!gameActive) return;
@@ -206,30 +232,34 @@ function animate() {
     if (shake > 0) { ctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); shake *= 0.9; }
     
     if (!gameOver) {
-        p1.vel.x = keys.a ? -6 : (keys.d ? 6 : 0);
-        
-        const settings = diffSettings[difficulty];
-        const dist = p1.pos.x - bot.pos.x;
-        bot.dir = dist > 0 ? 1 : -1;
+        if (!domainInEffect) {
+            p1.vel.x = keys.a ? -6 : (keys.d ? 6 : 0);
+            
+            const settings = diffSettings[difficulty];
+            const dist = p1.pos.x - bot.pos.x;
+            bot.dir = dist > 0 ? 1 : -1;
 
-        if (Math.abs(dist) > 70) {
-            bot.vel.x = dist > 0 ? settings.speed : -settings.speed;
-        } else {
-            bot.vel.x = 0;
-            if (Math.random() < settings.attackRate) { bot.isAtk = true; setTimeout(()=>bot.isAtk=false, 150); }
-        }
-        
-        bot.ce = Math.min(100, bot.ce + settings.ceRate);
-        if (bot.ce >= 100 && Math.random() < 0.01) useDomain(bot, p1);
-
-        [p1, bot].forEach(atk => {
-            const vic = atk === p1 ? bot : p1;
-            const hX = atk.dir === 1 ? atk.pos.x + 50 : atk.pos.x - 40;
-            if (atk.isAtk && hX < vic.pos.x + 50 && hX + 40 > vic.pos.x && atk.pos.y < vic.pos.y + 100 && atk.pos.y + 50 > vic.pos.y) {
-                vic.hp -= 0.6; atk.ce = Math.min(100, atk.ce + 0.8);
-                if (Math.random() < 0.1) triggerHitEffect(5); 
+            if (Math.abs(dist) > 70) {
+                bot.vel.x = dist > 0 ? settings.speed : -settings.speed;
+            } else {
+                bot.vel.x = 0;
+                if (Math.random() < settings.attackRate) { bot.isAtk = true; setTimeout(()=>bot.isAtk=false, 150); }
             }
-        });
+            bot.ce = Math.min(100, bot.ce + settings.ceRate);
+            if (bot.ce >= 100 && Math.random() < 0.01) useDomain(bot, p1);
+        }
+
+        // Standard Hit Detection (only when Domain is NOT active)
+        if (!domainInEffect) {
+            [p1, bot].forEach(atk => {
+                const vic = atk === p1 ? bot : p1;
+                const hX = atk.dir === 1 ? atk.pos.x + 50 : atk.pos.x - 40;
+                if (atk.isAtk && hX < vic.pos.x + 50 && hX + 40 > vic.pos.x && atk.pos.y < vic.pos.y + 100 && atk.pos.y + 50 > vic.pos.y) {
+                    vic.hp -= 0.6; atk.ce = Math.min(100, atk.ce + 0.8);
+                    if (Math.random() < 0.1) triggerHitEffect(5); 
+                }
+            });
+        }
 
         if (p1.hp <= 0 || bot.hp <= 0) {
             gameOver = true;
