@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIXEL KAIZEN 6.0 | DUAL CUSTOM</title>
+    <title>PIXEL KAIZEN 6.1 | CINEMATIC</title>
     <style>
         :root { --blue: #00d4ff; --red: #ff2e2e; --purple: #bc00ff; --green: #2eff7b; }
         body { margin: 0; background: #000; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: none; }
@@ -19,12 +19,17 @@
         .menu-btn { margin: 4px; padding: 10px; border: 2px solid white; background: none; color: white; font-family: inherit; cursor: pointer; width: 220px; text-transform: uppercase; font-size: 11px; }
         .menu-btn:hover { background: #fff; color: #000; }
         
-        /* Dual Customization Layout */
         .custom-row { display: flex; gap: 30px; margin-bottom: 10px; }
         .custom-col { display: flex; flex-direction: column; align-items: center; width: 250px; border: 1px solid #444; padding: 10px; border-radius: 10px; }
         .swatch-box { display: flex; gap: 6px; margin: 8px 0; }
         .swatch { width: 25px; height: 25px; border: 2px solid #444; border-radius: 50%; cursor: pointer; }
         .swatch.active { border-color: #fff; transform: scale(1.2); }
+
+        /* Domain Text UI */
+        #domain-announcement { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 150; pointer-events: none; opacity: 0; transform: scale(0.5); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #domain-announcement.active { opacity: 1; transform: scale(1.1); }
+        .de-subtext { font-size: 14px; color: #fff; letter-spacing: 4px; text-shadow: 0 0 10px #000; }
+        .de-maintext { font-size: 40px; color: var(--purple); text-shadow: 0 0 20px #fff; -webkit-text-stroke: 1px white; }
 
         .controls-layer { position: absolute; bottom: 5px; width: 800px; left: 50%; transform: translateX(-50%); display: flex; justify-content: space-between; pointer-events: none; }
         .ctrl-group { display: flex; gap: 6px; pointer-events: auto; padding: 10px; }
@@ -40,10 +45,14 @@
 
 <div id="game-container">
     <div id="domain-flash"></div>
+    <div id="domain-announcement">
+        <div class="de-subtext">DOMAIN EXPANSION</div>
+        <div id="de-name" class="de-maintext">VOID</div>
+    </div>
     <div id="stage-ui">STAGE 1</div>
     
     <div id="mode-menu" class="menu-screen">
-        <h1 style="color:var(--blue); letter-spacing: 4px;">KAIZEN 6.0</h1>
+        <h1 style="color:var(--blue); letter-spacing: 4px;">KAIZEN 6.1</h1>
         <button class="menu-btn" onclick="showDiff('1v1')">VS COMPUTER</button>
         <button class="menu-btn" onclick="setupGame('survival', 'medium')">SURVIVAL GAUNTLET</button>
         <button class="menu-btn" onclick="setupGame('split')">SPLIT-SCREEN 1V1</button>
@@ -72,7 +81,7 @@
                 <button class="menu-btn" id="dom-p2" onclick="cycleDom(2)">DE: SLASHES</button>
             </div>
         </div>
-        <button class="menu-btn" style="width: 530px;" onclick="toggleMenu('custom-menu', false)">SAVE ALL SETTINGS</button>
+        <button class="menu-btn" style="width: 530px;" onclick="toggleMenu('custom-menu', false)">SAVE SETTINGS</button>
     </div>
 
     <div id="ko-screen" class="menu-screen" style="display:none; background:rgba(255,0,0,0.3)">
@@ -167,7 +176,7 @@ class Fighter {
     }
     draw(c) {
         c.save(); c.translate(this.pos.x + 20, this.pos.y + 45);
-        if (this.isCharge) { c.shadowBlur = 20; c.shadowColor = this.config.color; }
+        if (this.isCharge) { c.shadowBlur = 25; c.shadowColor = this.config.color; }
         c.scale(this.dir, 1); c.strokeStyle = this.config.color; c.fillStyle = this.config.color; c.lineWidth = 5; c.lineCap = 'round';
         
         let ext = this.isAtk ? Math.sin(this.atkF * Math.PI) * 35 : 0;
@@ -181,10 +190,8 @@ class Fighter {
         } else {
             c.beginPath(); c.arc(0, -45, 12, 0, Math.PI*2); c.stroke(); // Head
             c.beginPath(); c.moveTo(0, -33); c.lineTo(0, 10); c.stroke(); // Spine
-            // 2 Arms
             c.beginPath(); c.moveTo(0, -25); c.lineTo(15 + ext, -10); c.stroke();
             c.beginPath(); c.moveTo(0, -25); c.lineTo(-15, 0); c.stroke();
-            // 2 Legs
             c.beginPath(); c.moveTo(0, 10); c.lineTo(15 + walk, 40 - tuck); c.stroke();
             c.beginPath(); c.moveTo(0, 10); ctx.lineTo(-15 - walk, 40 - tuck); c.stroke();
         }
@@ -208,10 +215,23 @@ function useDomain(caster, target) {
     
     caster.config.lastDE = now; caster.ce = 0;
     const type = caster.config.domain;
+    
+    // Announcement UI
+    const announce = document.getElementById('domain-announcement');
+    const nameTxt = document.getElementById('de-name');
+    nameTxt.innerText = type.toUpperCase();
+    nameTxt.style.color = caster.config.color;
+    announce.classList.add('active');
+    
     const flash = document.getElementById('domain-flash');
     flash.style.opacity = '1'; flash.style.background = caster.config.color;
     document.getElementById('game-container').style.borderColor = caster.config.color;
-    setTimeout(() => { flash.style.opacity = '0'; document.getElementById('game-container').style.borderColor = '#333'; }, 600);
+    
+    setTimeout(() => { 
+        announce.classList.remove('active');
+        flash.style.opacity = '0'; 
+        document.getElementById('game-container').style.borderColor = '#333'; 
+    }, 1500);
 
     if (type === 'clone') {
         clone = new Fighter(caster.pos.x, { ...caster.config, color: caster.config.color+'88' }, false, 3);
@@ -245,14 +265,12 @@ function loop() {
     if (!gameActive || gameOver) return;
     ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0, 0, 800, 400);
 
-    // Zoom Camera
     let dist = Math.abs(p1.pos.x - p2.pos.x);
     let scale = Math.max(0.65, Math.min(1.15, 800/(dist+280)));
     ctx.translate(400, 200); ctx.scale(scale, scale);
     ctx.translate(-(p1.pos.x+p2.pos.x)/2 - 20, -260);
     if (shake > 0) { ctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); shake *= 0.9; }
 
-    // Controls & AI
     p1.vel.x = keys.p1l ? -6 : (keys.p1r ? 6 : 0);
     if(currentGameMode === 'split') p2.vel.x = keys.p2l ? -6 : (keys.p2r ? 6 : 0);
     else {
@@ -276,7 +294,6 @@ function loop() {
     p1.update(); p2.update();
     checkHit(p1, p2); checkHit(p2, p1);
 
-    // Render
     p1.draw(ctx); p2.draw(ctx);
     particles.forEach((p, i) => {
         if(p.type === 'burst') { ctx.fillStyle = 'white'; ctx.fillRect(p.x-30, 0, 100, 400); }
@@ -290,7 +307,6 @@ function loop() {
         s.life--; if(s.life <= 0) hitSparks.splice(i, 1);
     });
 
-    // Death System
     if (p1.hp <= 0) { gameOver = true; toggleMenu('ko-screen', true); }
     if (p2.hp <= 0) {
         if(currentGameMode === 'survival') {
@@ -299,13 +315,11 @@ function loop() {
         } else { gameOver = true; toggleMenu('ko-screen', true); }
     }
 
-    // HUD Update
     document.getElementById('p1-hp').style.width = p1.hp + "%";
     document.getElementById('p2-hp').style.width = (p2.hp / (p2.isBot ? (100 + stage*15)/100 : 1)) + "%";
     document.getElementById('p1-ce').style.width = p1.ce + "%";
     document.getElementById('p2-ce').style.width = p2.ce + "%";
     
-    // Cooldown UI
     let now = Date.now();
     let p1cd = Math.max(0, Math.ceil((cooldown - (now - p1Config.lastDE))/1000));
     let p2cd = Math.max(0, Math.ceil((cooldown - (now - p2Config.lastDE))/1000));
@@ -325,7 +339,14 @@ const bind = (id, k) => {
         else if(id.includes('d')) { if(k === 'p1') useDomain(p1, p2); else useDomain(p2, p1); }
         else keys[k] = true;
     };
-    el.ontouchend = () => keys[k] = false;
+    
+    // FIXED: Release logic to stop Aura charging
+    const release = (e) => {
+        if(e) e.preventDefault();
+        if(id.includes('c')) { if(k === 'p1') p1.isCharge = false; else p2.isCharge = false; }
+        else keys[k] = false;
+    };
+    el.ontouchend = el.onmouseleave = release;
 };
 
 bind('p1-l', 'p1l'); bind('p1-r', 'p1r'); bind('p1-j', 'p1'); bind('p1-a', 'p1'); bind('p1-c', 'p1'); bind('p1-d', 'p1');
