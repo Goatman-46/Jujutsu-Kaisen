@@ -3,316 +3,261 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIXEL KAIZEN 4.0 | DEFINITIVE</title>
+    <title>PIXEL KAIZEN: ULTIMATE</title>
     <style>
         :root { --blue: #00d4ff; --red: #ff2e2e; --purple: #bc00ff; --green: #2eff7b; }
-        body { margin: 0; background: #050505; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: none; }
-        #game-container { position: relative; width: 800px; height: 400px; margin: 10px auto; border: 4px solid #333; overflow: hidden; background: #111; }
+        body { margin: 0; background: #000; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: none; }
+        #game-container { position: relative; width: 800px; height: 400px; margin: 5px auto; border: 4px solid #333; overflow: hidden; background: #0a0a0a; }
         
-        /* Domain Borders */
-        .border-active { border-color: var(--purple) !important; box-shadow: 0 0 20px var(--purple); }
-        
-        .hud { position: absolute; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 10; pointer-events: none;}
-        .bar-bg { background: rgba(0,0,0,0.8); height: 18px; border: 2px solid #fff; width: 250px; }
-        .hp-fill { background: #ff2e2e; height: 100%; width: 100%; transition: width 0.3s; }
-        .ce-bg { background: #000; height: 6px; margin-top: 4px; border: 1px solid var(--blue); }
+        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; z-index: 50; pointer-events: none;}
+        .bar-bg { background: rgba(0,0,0,0.8); height: 14px; border: 2px solid #fff; width: 180px; }
+        .hp-fill { background: var(--red); height: 100%; width: 100%; transition: 0.3s; }
+        .ce-bg { background: #000; height: 5px; margin-top: 2px; border: 1px solid var(--blue); }
         .ce-fill { background: var(--blue); height: 100%; width: 0%; }
 
-        #menu, #mode-menu, #custom-menu { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .menu-btn { margin: 8px; padding: 12px; border: 2px solid white; background: none; color: white; font-family: inherit; cursor: pointer; width: 260px; text-transform: uppercase; }
-        .menu-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .menu-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .menu-btn { margin: 5px; padding: 10px; border: 2px solid white; background: none; color: white; font-family: inherit; cursor: pointer; width: 220px; text-transform: uppercase; font-size: 12px; }
+        .menu-btn:hover { background: #fff; color: #000; }
+        
+        .swatch-box { display: flex; gap: 8px; margin-bottom: 15px; }
+        .swatch { width: 30px; height: 30px; border: 2px solid #444; border-radius: 50%; cursor: pointer; }
+        .swatch.active { border-color: #fff; transform: scale(1.2); }
 
-        #domain-ui { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; pointer-events: none; opacity: 0; transition: 0.5s; }
-        #domain-ui.active { opacity: 1; transform: scale(1.2); }
-
-        .mobile-btns { display: flex; justify-content: space-between; width: 800px; margin: 5px auto; max-width: 95vw; }
-        .btn { width: 60px; height: 60px; background: #222; border: 2px solid #444; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        #cd-timer { color: var(--red); font-weight: bold; }
+        .controls-layer { position: absolute; bottom: 5px; width: 800px; left: 50%; transform: translateX(-50%); display: flex; justify-content: space-between; pointer-events: none; }
+        .ctrl-group { display: flex; gap: 5px; pointer-events: auto; padding: 10px; }
+        .btn { width: 50px; height: 50px; background: rgba(50,50,50,0.8); border: 2px solid #666; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; user-select: none; }
+        .btn:active { background: #fff; color: #000; }
+        
+        #domain-flash { position: absolute; inset: 0; pointer-events: none; z-index: 100; mix-blend-mode: overlay; opacity: 0; transition: 0.5s; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="mode-menu">
-        <h1 style="color: var(--blue); font-style: italic;">PIXEL KAIZEN 4.0</h1>
-        <button class="menu-btn" onclick="setMode('1v1')">1v1 Duel</button>
-        <button class="menu-btn" onclick="setMode('survival')">Survival Gauntlet</button>
-        <button class="menu-btn" style="border-color: var(--purple)" onclick="openCustom()">Customization</button>
+    <div id="domain-flash"></div>
+    
+    <!-- Initial Mode Menu -->
+    <div id="mode-menu" class="menu-screen">
+        <h1 style="color:var(--blue)">PIXEL KAIZEN</h1>
+        <button class="menu-btn" onclick="showDiff('1v1')">VS COMPUTER</button>
+        <button class="menu-btn" onclick="setupGame('split')">SPLIT-SCREEN 1V1</button>
+        <button class="menu-btn" onclick="showDiff('domain-only')">DOMAIN ONLY (CPU)</button>
+        <button class="menu-btn" style="border-color:var(--purple)" onclick="toggleMenu('custom-menu', true)">CUSTOMIZE</button>
     </div>
 
-    <div id="custom-menu" style="display:none">
-        <h2>DOMAIN TYPE</h2>
-        <button class="menu-btn" id="dom-label" onclick="cycleDomain()">TYPE: SLASHES</button>
-        <button class="menu-btn" onclick="closeCustom()">BACK</button>
+    <!-- Difficulty Menu -->
+    <div id="diff-menu" class="menu-screen" style="display:none">
+        <h2>SELECT DIFFICULTY</h2>
+        <button class="menu-btn" onclick="setupGame(tempMode, 'easy')">EASY</button>
+        <button class="menu-btn" onclick="setupGame(tempMode, 'medium')">MEDIUM</button>
+        <button class="menu-btn" onclick="setupGame(tempMode, 'hard')">NIGHTMARE</button>
     </div>
 
-    <div id="domain-ui"><h1 id="domain-text" style="text-shadow: 0 0 20px #fff;">DOMAIN EXPANSION</h1></div>
-
-    <div id="ko-screen" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.9); z-index:400; flex-direction:column; align-items:center; justify-content:center;">
-        <h1 id="ko-msg" style="font-size:50px;">K.O.</h1>
-        <button class="menu-btn" onclick="location.reload()">RESTART</button>
+    <!-- Customization Menu -->
+    <div id="custom-menu" class="menu-screen" style="display:none">
+        <h3>PLAYER COLOR</h3>
+        <div class="swatch-box" id="swatches"></div>
+        <h3>EQUIPPED DOMAIN</h3>
+        <button class="menu-btn" id="dom-btn" onclick="cycleDom()">TYPE: SLASHES</button>
+        <button class="menu-btn" onclick="toggleMenu('custom-menu', false)">DONE</button>
     </div>
 
     <div class="hud">
-        <div>
+        <div id="p1-ui">
             <div class="bar-bg"><div id="p1-hp" class="hp-fill"></div></div>
             <div class="ce-bg"><div id="p1-ce" class="ce-fill"></div></div>
         </div>
-        <div style="text-align: right;">
-            <div class="bar-bg" style="margin-left: auto;"><div id="p2-hp" class="hp-fill"></div></div>
-            <div class="ce-bg" style="margin-left: auto;"><div id="p2-ce" class="ce-fill"></div></div>
+        <div id="p2-ui" style="text-align:right">
+            <div class="bar-bg" style="margin-left:auto"><div id="p2-hp" class="hp-fill"></div></div>
+            <div class="ce-bg" style="margin-left:auto"><div id="p2-ce" class="ce-fill"></div></div>
         </div>
     </div>
+
     <canvas id="gameCanvas" width="800" height="400"></canvas>
 </div>
 
-<div class="mobile-btns">
-    <div style="display:flex; gap:10px;"><div class="btn" id="btn-left">◀</div><div class="btn" id="btn-right">▶</div><div class="btn" id="btn-charge">AURA</div></div>
-    <div style="display:flex; gap:10px;"><div class="btn" id="btn-up">JUMP</div><div class="btn" id="btn-atk">PUNCH</div><div class="btn" id="btn-dom">DE <span id="cd-timer"></span></div></div>
+<div class="controls-layer">
+    <div class="ctrl-group" id="p1-ctrls">
+        <div class="btn" id="p1-l">◀</div><div class="btn" id="p1-r">▶</div>
+        <div class="btn" id="p1-j">JMP</div><div class="btn" id="p1-a">HIT</div><div class="btn" id="p1-c">CE</div><div class="btn" id="p1-d">DE</div>
+    </div>
+    <div class="ctrl-group" id="p2-ctrls" style="display:none">
+        <div class="btn" id="p2-d">DE</div><div class="btn" id="p2-c">CE</div><div class="btn" id="p2-a">HIT</div><div class="btn" id="p2-j">JMP</div>
+        <div class="btn" id="p2-l">◀</div><div class="btn" id="p2-r">▶</div>
+    </div>
 </div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const domainTypes = ['slashes', 'burst', 'whiteout', 'rain', 'clone'];
-let currentDomainIdx = 0;
-let gameActive = false, gameMode = '1v1', domainActive = false, gameOver = false;
-let stage = 1, shake = 0, lastDomainTime = 0, domainCooldown = 15000;
-let clone = null, hitSparks = [], particles = [];
+let gameActive = false, currentGameMode = '', diff = 'medium', tempMode = '';
+let p1Color = '#00d4ff', p2Color = '#ff2e2e', selectedDomIdx = 0;
+const domains = ['slashes', 'burst', 'whiteout', 'rain', 'clone'];
+let p1, p2, clone = null, domainTimer = 0, lastP1Domain = 0;
+let hitSparks = [], particles = [], shake = 0;
+
+// Init Swatches
+const colors = ['#00d4ff', '#ffffff', '#ffeb3b', '#e91e63', '#2eff7b', '#ff9800'];
+colors.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'swatch' + (c === p1Color ? ' active' : '');
+    s.style.background = c;
+    s.onclick = () => { p1Color = c; document.querySelectorAll('.swatch').forEach(x => x.classList.remove('active')); s.classList.add('active'); };
+    document.getElementById('swatches').appendChild(s);
+});
+
+function toggleMenu(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+function showDiff(mode) { tempMode = mode; toggleMenu('mode-menu', false); toggleMenu('diff-menu', true); }
+function cycleDom() { selectedDomIdx = (selectedDomIdx + 1) % domains.length; document.getElementById('dom-btn').innerText = "TYPE: " + domains[selectedDomIdx].toUpperCase(); }
 
 class Fighter {
-    constructor(x, color, isBot = false) {
-        this.isBot = isBot;
-        this.color = color;
-        this.reset(x);
-    }
-    reset(x) {
-        this.pos = { x, y: 280 };
-        this.vel = { x: 0, y: 0 };
-        this.maxHp = (this.isBot && stage % 5 === 0) ? 200 : 100;
-        this.hp = this.maxHp;
-        this.ce = 0;
-        this.dir = this.pos.x > 400 ? -1 : 1;
-        this.isAtk = false; this.atkFrame = 0;
-        this.isCharge = false; this.jumps = 0;
-        this.anim = 0;
+    constructor(x, color, isBot = false, id = 1) {
+        this.id = id; this.isBot = isBot; this.color = color;
+        this.pos = { x, y: 280 }; this.vel = { x: 0, y: 0 };
+        this.hp = 100; this.ce = 0; this.dir = x > 400 ? -1 : 1;
+        this.isAtk = false; this.atkF = 0; this.isCharge = false; this.jumps = 0;
     }
     update() {
-        this.pos.x += this.vel.x;
-        this.pos.y += this.vel.y;
-        if (this.pos.y > 280) { this.pos.y = 280; this.vel.y = 0; this.jumps = 0; }
-        else { this.vel.y += 0.8; }
-        if (this.isCharge) this.ce = Math.min(100, this.ce + 0.3); // Slower charging
-        if (this.isAtk) {
-            this.atkFrame += 0.15;
-            if (this.atkFrame >= 1) { this.isAtk = false; this.atkFrame = 0; }
-        }
-        this.anim += 0.1;
+        this.pos.x += this.vel.x; this.pos.y += this.vel.y;
+        if (this.pos.y > 280) { this.pos.y = 280; this.vel.y = 0; this.jumps = 0; } else { this.vel.y += 0.8; }
+        if (this.isCharge) this.ce = Math.min(100, this.ce + 0.25);
+        if (this.isAtk) { this.atkF += 0.15; if(this.atkF >= 1) { this.isAtk = false; this.atkF = 0; } }
     }
-    draw(context) {
-        context.save();
-        context.translate(this.pos.x + 20, this.pos.y + 45);
-        
-        if (this.isCharge) {
-            context.shadowBlur = 15; context.shadowColor = this.color;
-            context.fillStyle = this.color;
-            context.globalAlpha = 0.3;
-            context.beginPath();
-            context.moveTo(-25, 40); context.lineTo(0, -70); context.lineTo(25, 40);
-            context.fill();
-            context.globalAlpha = 1.0;
-        }
-
-        context.scale(this.dir, 1);
-        context.strokeStyle = this.color;
-        context.lineWidth = 4;
-        context.lineCap = 'round';
-
-        let ext = this.isAtk ? Math.sin(this.atkFrame * Math.PI) * 35 : 0;
-        let walk = (Math.abs(this.vel.x) > 0.1) ? Math.sin(this.anim * 5) * 15 : 0;
-        let jumpY = (this.pos.y < 280) ? 10 : 0;
-
-        // Head
-        context.beginPath(); context.arc(0, -35, 10, 0, Math.PI*2); context.stroke();
-        // Body
-        context.beginPath(); context.moveTo(0, -25); context.lineTo(0, 10); context.stroke();
-        // Arms
-        context.beginPath(); context.moveTo(0, -15); context.lineTo(10 + ext, 5); context.stroke(); // Front
-        context.beginPath(); context.moveTo(0, -15); context.lineTo(-15, 10); context.stroke(); // Back
-        // Legs
-        context.beginPath(); context.moveTo(0, 10); context.lineTo(10 + walk, 35 - jumpY); context.stroke();
-        context.beginPath(); context.moveTo(0, 10); context.lineTo(-10 - walk, 35 - jumpY); context.stroke();
-        
-        context.restore();
+    draw(c) {
+        c.save(); c.translate(this.pos.x + 20, this.pos.y + 45);
+        if (this.isCharge) { c.shadowBlur = 20; c.shadowColor = this.color; }
+        c.scale(this.dir, 1); c.strokeStyle = this.color; c.lineWidth = 4; c.lineCap = 'round';
+        let ext = this.isAtk ? Math.sin(this.atkF * Math.PI) * 30 : 0;
+        let walk = (Math.abs(this.vel.x) > 0.1) ? Math.sin(Date.now()*0.01) * 15 : 0;
+        c.beginPath(); c.arc(0, -35, 10, 0, Math.PI*2); c.stroke(); // Head
+        c.beginPath(); c.moveTo(0, -25); c.lineTo(0, 10); c.stroke(); // Spine
+        c.beginPath(); c.moveTo(0, -15); c.lineTo(10+ext, 5); c.stroke(); // Arm
+        c.beginPath(); c.moveTo(0, 10); c.lineTo(10+walk, 35); c.stroke(); // Leg
+        c.restore();
     }
 }
 
-const p1 = new Fighter(100, '#00d4ff');
-let bot = new Fighter(650, '#ff2e2e', true);
-
-function setMode(m) { gameMode = m; document.getElementById('mode-menu').style.display='none'; startGame(); }
-function openCustom() { document.getElementById('mode-menu').style.display='none'; document.getElementById('custom-menu').style.display='flex'; }
-function closeCustom() { document.getElementById('custom-menu').style.display='none'; document.getElementById('mode-menu').style.display='flex'; }
-function cycleDomain() { currentDomainIdx = (currentDomainIdx + 1) % domainTypes.length; document.getElementById('dom-label').innerText = "TYPE: " + domainTypes[currentDomainIdx].toUpperCase(); }
-
-function startGame() { gameActive = true; loop(); }
+function setupGame(mode, d) {
+    currentGameMode = mode; diff = d || 'medium';
+    p1 = new Fighter(150, p1Color, false, 1);
+    p2 = new Fighter(650, p2Color, mode !== 'split', 2);
+    if(mode === 'split') document.getElementById('p2-ctrls').style.display = 'flex';
+    toggleMenu('mode-menu', false); toggleMenu('diff-menu', false);
+    gameActive = true; loop();
+}
 
 function useDomain(caster, target) {
-    let now = Date.now();
-    if (caster.ce < 100 || domainActive || (caster === p1 && now - lastDomainTime < domainCooldown)) return;
-    
-    if(caster === p1) lastDomainTime = now;
-    caster.ce = 0;
-    domainActive = true;
-    const type = caster.isBot ? domainTypes[Math.floor(Math.random()*domainTypes.length)] : domainTypes[currentDomainIdx];
-    
-    const ui = document.getElementById('domain-ui');
-    ui.classList.add('active');
-    document.getElementById('domain-text').innerText = type.toUpperCase();
-    document.getElementById('game-container').classList.add('border-active');
+    if (caster.ce < 100 || domainTimer > 0) return;
+    caster.ce = 0; domainTimer = 500; // Total effect time
+    const type = caster.isBot ? domains[Math.floor(Math.random()*domains.length)] : domains[selectedDomIdx];
+    const flash = document.getElementById('domain-flash');
+    flash.style.opacity = '1'; flash.style.background = caster.color;
+    setTimeout(() => flash.style.opacity = '0', 500);
 
-    setTimeout(() => {
-        if (type === 'slashes') {
-            let hits = 0;
-            let itv = setInterval(() => {
-                target.hp -= 2; createHit(target.pos.x+20, target.pos.y+40); shake = 5;
-                if (++hits > 25) { clearInterval(itv); endDomain(); }
-            }, 100);
-        } else if (type === 'clone') {
-            clone = new Fighter(caster.pos.x, 'rgba(0, 212, 255, 0.5)');
-            clone.hp = 50;
-            endDomain();
-        } else if (type === 'whiteout') {
-            shake = 20; target.hp -= 40;
-            setTimeout(endDomain, 1000);
-        } else if (type === 'rain') {
-            let drops = 0;
-            let itv = setInterval(() => {
-                particles.push({x: Math.random()*800, y: 0});
-                target.hp -= 0.8;
-                if (++drops > 50) { clearInterval(itv); endDomain(); particles=[]; }
-            }, 60);
-        } else if (type === 'burst') {
-            target.hp -= 45; shake = 30;
-            setTimeout(endDomain, 1000);
-        }
-    }, 1000);
+    if (type === 'clone') {
+        clone = new Fighter(caster.pos.x, caster.color + "88", false, 3);
+        clone.hp = 50; clone.lifetime = 1200; // 20 seconds at 60fps
+    } else if (type === 'whiteout') {
+        target.hp -= 40; shake = 30;
+    } else if (type === 'slashes') {
+        let h = 0; let itv = setInterval(() => {
+            target.hp -= 2; createHit(target.pos.x+20, target.pos.y+40);
+            if(h++ > 20) clearInterval(itv);
+        }, 100);
+    } else if (type === 'rain') {
+        for(let i=0; i<60; i++) particles.push({x: Math.random()*800, y: -Math.random()*400, target});
+    }
 }
 
-function endDomain() {
-    domainActive = false;
-    document.getElementById('domain-ui').classList.remove('active');
-    document.getElementById('game-container').classList.remove('border-active');
-}
-
-function createHit(x, y) { hitSparks.push({x, y, t: 10}); }
+function createHit(x, y) { hitSparks.push({x, y, life: 10}); }
 
 function loop() {
     if (!gameActive) return;
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0, 0, 800, 400);
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0, 0, 800, 400);
 
-    // --- Dynamic Camera Logic ---
-    let centerX = (p1.pos.x + bot.pos.x) / 2;
-    let dist = Math.abs(p1.pos.x - bot.pos.x);
-    let scale = Math.max(0.7, Math.min(1.2, 800 / (dist + 300)));
-    
-    ctx.translate(400, 200);
-    ctx.scale(scale, scale);
-    ctx.translate(-centerX - 20, -230);
-    
+    // Camera
+    let dist = Math.abs(p1.pos.x - p2.pos.x);
+    let scale = Math.max(0.6, Math.min(1.2, 800/(dist+200)));
+    ctx.translate(400, 200); ctx.scale(scale, scale);
+    ctx.translate(-(p1.pos.x+p2.pos.x)/2 - 20, -250);
     if (shake > 0) { ctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); shake *= 0.9; }
 
-    // --- Logic ---
-    if (!gameOver) {
-        // P1 Movement
-        p1.vel.x = keys.a ? -5 : (keys.d ? 5 : 0);
-        if (keys.a) p1.dir = -1; if (keys.d) p1.dir = 1;
-
-        // Bot AI
-        if (!domainActive) {
-            let d = p1.pos.x - bot.pos.x;
-            bot.vel.x = Math.abs(d) > 70 ? (d > 0 ? 3 : -3) : 0;
-            bot.dir = d > 0 ? 1 : -1;
-            if (Math.random() < 0.02 && !bot.isAtk) bot.isAtk = true;
-            if (bot.ce >= 100 && Math.random() < 0.01) useDomain(bot, p1);
-            bot.ce += 0.1;
-        }
-
-        // Clone AI
-        if (clone) {
-            let d = bot.pos.x - clone.pos.x;
-            clone.vel.x = d > 0 ? 2 : -2;
-            if (Math.abs(d) < 60 && Math.random() < 0.05) clone.isAtk = true;
-            if (clone.isAtk && Math.abs(bot.pos.x - clone.pos.x) < 60) { bot.hp -= 0.4; createHit(bot.pos.x+20, bot.pos.y+40); }
-            clone.update(); clone.draw(ctx);
-        }
-
-        // Damage Detection (Punches)
-        [p1, bot].forEach(attacker => {
-            let victim = (attacker === p1) ? bot : p1;
-            if (attacker.isAtk && attacker.atkFrame > 0.3 && attacker.atkFrame < 0.7) {
-                let hitX = attacker.pos.x + (attacker.dir === 1 ? 40 : -20);
-                if (Math.abs(hitX - victim.pos.x) < 40 && Math.abs(attacker.pos.y - victim.pos.y) < 50) {
-                    victim.hp -= 1.5;
-                    createHit(victim.pos.x+20, victim.pos.y+40);
-                    shake = 3;
-                }
-            }
-        });
-
-        // Survival Logic
-        if (bot.hp <= 0) {
-            if (gameMode === 'survival') {
-                stage++;
-                bot.reset(650);
-                p1.hp = Math.min(100, p1.hp + 30);
-            } else {
-                gameOver = true; document.getElementById('ko-screen').style.display='flex';
-            }
-        }
-        if (p1.hp <= 0) { gameOver = true; document.getElementById('ko-screen').style.display='flex'; }
+    // Logic
+    updateFighter(p1); updateFighter(p2);
+    if(p2.isBot) updateAI(p2, p1);
+    if(clone) {
+        updateAI(clone, p2); updateFighter(clone); clone.draw(ctx);
+        clone.lifetime--; if(clone.lifetime <= 0 || clone.hp <= 0) clone = null;
     }
 
-    // --- Render ---
-    p1.update(); p1.draw(ctx);
-    bot.update(); bot.draw(ctx);
-    
-    particles.forEach(p => { 
-        ctx.fillStyle = 'cyan'; p.y += 15; ctx.fillRect(p.x, p.y, 2, 20); 
-    });
+    // Punches
+    checkHit(p1, p2); checkHit(p2, p1);
+    if(clone) checkHit(clone, p2);
 
+    // Rendering
+    p1.draw(ctx); p2.draw(ctx);
+    particles.forEach((p, i) => {
+        p.y += 10; ctx.fillStyle = 'white'; ctx.fillRect(p.x, p.y, 2, 10);
+        if(Math.abs(p.x - p.target.pos.x) < 40 && Math.abs(p.y - p.target.pos.y) < 50) { p.target.hp -= 0.5; particles.splice(i,1); }
+    });
     hitSparks.forEach((s, i) => {
-        ctx.strokeStyle = 'white'; ctx.beginPath();
-        ctx.moveTo(s.x-5, s.y-5); ctx.lineTo(s.x+5, s.y+5); ctx.stroke();
-        s.t--; if(s.t <= 0) hitSparks.splice(i, 1);
+        ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.moveTo(s.x-5, s.y-5); ctx.lineTo(s.x+5, s.y+5); ctx.stroke();
+        s.life--; if(s.life <= 0) hitSparks.splice(i, 1);
     });
 
-    // --- HUD ---
+    // UI
     document.getElementById('p1-hp').style.width = p1.hp + "%";
-    document.getElementById('p2-hp').style.width = (bot.hp / bot.maxHp * 100) + "%";
+    document.getElementById('p2-hp').style.width = p2.hp + "%";
     document.getElementById('p1-ce').style.width = p1.ce + "%";
-    document.getElementById('p2-ce').style.width = bot.ce + "%";
+    document.getElementById('p2-ce').style.width = p2.ce + "%";
+    if(domainTimer > 0) domainTimer--;
     
-    let cd = Math.max(0, Math.ceil((domainCooldown - (Date.now() - lastDomainTime))/1000));
-    document.getElementById('cd-timer').innerText = cd > 0 && lastDomainTime !== 0 ? cd + "s" : "";
-    document.getElementById('btn-dom').style.opacity = (p1.ce >= 100 && cd === 0) ? "1" : "0.5";
-
     requestAnimationFrame(loop);
 }
 
-const keys = { a: false, d: false };
-const bind = (id, s, e) => {
+function updateFighter(f) {
+    if(f.id === 1) {
+        f.vel.x = keys.p1l ? -5 : (keys.p1r ? 5 : 0);
+    } else if(f.id === 2 && currentGameMode === 'split') {
+        f.vel.x = keys.p2l ? -5 : (keys.p2r ? 5 : 0);
+    }
+    f.update();
+}
+
+function updateAI(bot, target) {
+    let d = target.pos.x - bot.pos.x;
+    let speed = diff === 'easy' ? 2 : (diff === 'medium' ? 3.5 : 5);
+    bot.vel.x = Math.abs(d) > 60 ? (d > 0 ? speed : -speed) : 0;
+    bot.dir = d > 0 ? 1 : -1;
+    if(Math.random() < 0.02) bot.isAtk = true;
+    if(bot.ce >= 100 && Math.random() < 0.01) useDomain(bot, target);
+}
+
+function checkHit(a, v) {
+    if(a.isAtk && a.atkF > 0.4 && a.atkF < 0.7) {
+        let hitX = a.pos.x + (a.dir * 40);
+        if(Math.abs(hitX - v.pos.x) < 40 && Math.abs(a.pos.y - v.pos.y) < 50) {
+            if(currentGameMode !== 'domain-only') v.hp -= (a.id === 3 ? 0.5 : 1.5);
+            createHit(v.pos.x+20, v.pos.y+40);
+        }
+    }
+}
+
+const keys = {};
+const bind = (id, k) => {
     const el = document.getElementById(id);
-    el.onmousedown = el.ontouchstart = (ev) => { ev.preventDefault(); s(); };
-    el.onmouseup = el.onmouseleave = el.ontouchend = (ev) => { ev.preventDefault(); if(e) e(); };
+    el.ontouchstart = (e) => { e.preventDefault(); 
+        if(id.includes('j')) { if(k === 'p1') { if(p1.jumps < 2) { p1.vel.y = -15; p1.jumps++; } } else { if(p2.jumps < 2) { p2.vel.y = -15; p2.jumps++; } } }
+        else if(id.includes('a')) { if(k === 'p1') p1.isAtk = true; else p2.isAtk = true; }
+        else if(id.includes('c')) { if(k === 'p1') p1.isCharge = true; else p2.isCharge = true; }
+        else if(id.includes('d')) { if(k === 'p1') useDomain(p1, p2); else useDomain(p2, p1); }
+        else keys[k] = true;
+    };
+    el.ontouchend = () => keys[k] = false;
 };
-bind('btn-left', () => keys.a = true, () => keys.a = false);
-bind('btn-right', () => keys.d = true, () => keys.d = false);
-bind('btn-up', () => { if(p1.jumps < 2) { p1.vel.y = -15; p1.jumps++; } });
-bind('btn-charge', () => p1.isCharge = true, () => p1.isCharge = false);
-bind('btn-atk', () => { if(!p1.isAtk) p1.isAtk = true; });
-bind('btn-dom', () => useDomain(p1, bot));
+
+bind('p1-l', 'p1l'); bind('p1-r', 'p1r'); bind('p1-j', 'p1'); bind('p1-a', 'p1'); bind('p1-c', 'p1'); bind('p1-d', 'p1');
+bind('p2-l', 'p2l'); bind('p2-r', 'p2r'); bind('p2-j', 'p2'); bind('p2-a', 'p2'); bind('p2-c', 'p2'); bind('p2-d', 'p2');
 </script>
 </body>
 </html>
